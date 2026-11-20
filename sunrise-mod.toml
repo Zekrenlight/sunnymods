@@ -1,0 +1,164 @@
+id = "sunnymods"
+name = "SunnyMods"
+version = "1.0.0"
+description = "A better Mods list for Sunrise. It takes over the title screen's Mods button and Options > Mods... with each mod's own icon, its version, authors, licence and links, the full description, the keys it adds and a Settings button for its settings page. Search by name, @author or #id, filter to Running, Settings or Issues, and sort by name, author or settings first. Browse Mods, the mods folder and Sunrise's own list stay one click away."
+authors = ["Zekrenlight"]
+license = "MIT"
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
+
+# Sunrise Mod SDK 9425651 (94256510f74, 19 Nov 2026, API 0.2, game 26.3). Mixins tool rev e59da909.
+# The list reads the game's installed mods and stands in for its Mods page, so the mod is
+# pinned to this commit.
+[native]
+game = "26.3"
+sunrise = "94256510f74e6843754e0a93fd9e4da7e45b1056"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"
+
+# The list itself: drawing, mouse, wheel and keys (`crate::game::sunnymods_ui`).
+[[native.module]]
+id = "ui"
+file = "crates/sunrise-client/src/game.rs"
+name = "sunnymods_ui"
+source = "src/native/ui.rs"
+
+# Once a frame, before it is drawn: the Mods key, and Sunrise's own list let go once its
+# pages are left.
+[[native.mixin]]
+id = "frame"
+target = "sunrise_client::game::native_hooks::render_frame_pre::Game<'_>::native_render_frame_pre"
+kind = "HEAD"
+helper = "src/mixins/frame.rs"
+bindings = [{ name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" }]
+
+# The Options screen on its Mods page (the title screen's Mods button and Options > Mods...
+# both open it): SunnyMods draws its list instead.
+[[native.mixin]]
+id = "options_draw"
+target = "sunrise_client::game::options::Game<'_>::draw_options"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_draw.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "batch", ty = "&mut sunrise_client::hud::HudBatch", value = "&mut *batch" },
+]
+
+[[native.mixin]]
+id = "options_mouse"
+target = "sunrise_client::game::options::Game<'_>::options_mouse"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_mouse.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pressed", ty = "bool", value = "pressed" },
+  { name = "right", ty = "bool", value = "right" },
+]
+
+[[native.mixin]]
+id = "options_drag"
+target = "sunrise_client::game::options::Game<'_>::options_drag"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_drag.rs"
+bindings = [{ name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" }]
+
+[[native.mixin]]
+id = "options_scroll"
+target = "sunrise_client::game::options::Game<'_>::options_scroll"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_scroll.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "amount", ty = "f32", value = "amount" },
+]
+
+[[native.mixin]]
+id = "options_key"
+target = "sunrise_client::game::options::Game<'_>::options_key"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_key.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "key", ty = "KeyCode", value = "key" },
+  { name = "text", ty = "Option<&str>", value = "text" },
+]
+
+[[native.mixin]]
+id = "options_shortcut"
+target = "sunrise_client::game::options::Game<'_>::options_shortcut"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/options_shortcut.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "shortcut", ty = "sunrise_client::clipboard::EditShortcut", value = "shortcut" },
+]
+
+# The settings card (shared Sunrise dark card). Sunrise opens a mod's settings as its
+# Options page `NativeMod(index)` (SunnyMods' Settings button, Sunrise's Mods list and the
+# mod's own settings key all land there). These HEAD hooks act only on this mod's own page
+# and let every other page, and every other mod's card, through untouched.
+[[native.module]]
+id = "card"
+file = "crates/sunrise-client/src/game.rs"
+name = "sunnymods_card"
+source = "src/native/card.rs"
+
+[[native.mixin]]
+id = "card_draw"
+target = "sunrise_client::game::options::Game<'_>::draw_options"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/card_draw.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "batch", ty = "&mut sunrise_client::hud::HudBatch", value = "&mut *batch" },
+]
+
+[[native.mixin]]
+id = "card_mouse"
+target = "sunrise_client::game::options::Game<'_>::options_mouse"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/card_mouse.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "pressed", ty = "bool", value = "pressed" },
+  { name = "right", ty = "bool", value = "right" },
+]
+
+[[native.mixin]]
+id = "card_drag"
+target = "sunrise_client::game::options::Game<'_>::options_drag"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/card_drag.rs"
+bindings = [{ name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" }]
+
+[[native.mixin]]
+id = "card_scroll"
+target = "sunrise_client::game::options::Game<'_>::options_scroll"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/card_scroll.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "amount", ty = "f32", value = "amount" },
+]
+
+[[native.mixin]]
+id = "card_key"
+target = "sunrise_client::game::options::Game<'_>::options_key"
+kind = "HEAD"
+cancellable = true
+helper = "src/mixins/card_key.rs"
+bindings = [
+  { name = "game", ty = "&mut crate::game::Game<'_>", value = "&mut *self" },
+  { name = "key", ty = "KeyCode", value = "key" },
+  { name = "text", ty = "Option<&str>", value = "text" },
+]

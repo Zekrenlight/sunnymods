@@ -1,0 +1,21 @@
+[package]
+name = "mod-sunnymods"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "SunnyMods for Sunrise: a better Mods list with real icons, descriptions, search, filters and each mod's settings."
+authors = ["Zekrenlight"]
+
+[lib]
+name = "mod_sunnymods"
+path = "src/lib.rs"
+
+[dependencies]
+# The pinned SDK's API crate, fetched into .sunrise/sdk/ by any `cargo sunrise-mod` command.
+sunrise-mod-api = { path = ".sunrise/sdk/api/crates/sunrise-mod-api" }
+
+[dev-dependencies]
+# Only for the test that reads icons out of real built .smod files.
+zip = { version = "9", default-features = false, features = ["deflate"] }
+png = "0.18"
