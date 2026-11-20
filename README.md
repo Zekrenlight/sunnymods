@@ -7,6 +7,9 @@ SunnyMods takes over Sunrise's own Mods list: the title screen's **Mods** button
 **Options > Mods...** both open it. Nothing else changes; turn "Use SunnyMods" off on its
 settings page (or press **Sunrise List** at the bottom) to see Sunrise's list again.
 
+<img width="2559" height="1350" alt="image" src="https://github.com/user-attachments/assets/a19de9a2-38af-401e-b5ef-ed69e17e6672" />
+
+
 ## The list
 - Each mod's own `icon.png`, sharp at 32 px (20 px in compact rows); a lettered tile for mods
   without one. Mods built into the game are read from their installed package
