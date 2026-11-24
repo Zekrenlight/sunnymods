@@ -863,13 +863,11 @@ enum Act {
 pub(super) fn mouse(game: &mut Game<'_>, pressed: bool, right: bool) -> Result<()> {
     if !pressed {
         with(|s| s.held = None);
-        game.dragging = false;
         return Ok(());
     }
     if right {
         return Ok(());
     }
-    game.dragging = true;
     let (w, h) = game.gui_size();
     let mouse = (game.cursor.0.floor() as i32, game.cursor.1.floor() as i32);
     let (fx, fy) = (f64::from(game.cursor.0), f64::from(game.cursor.1));
@@ -1005,7 +1003,7 @@ fn perform(game: &mut Game<'_>, act: Act) -> Result<()> {
             game.handle_option_events(vec![Event::ButtonClick])?;
             with(|s| s.search.focused = false);
             // Leaves as the page's Escape does (back to Options in a world, out on the title).
-            game.options_key(KeyCode::Escape, None)
+            game.options_key(KeyCode::Escape, None).map(|_| ())
         }
     }
 }

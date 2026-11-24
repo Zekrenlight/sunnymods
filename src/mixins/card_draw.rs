@@ -3,8 +3,9 @@
 fn sunnymods_card_options_draw(
     game: &mut crate::game::Game<'_>,
     batch: &mut sunrise_client::hud::HudBatch,
+    allowed: bool,
 ) -> ::core::ops::ControlFlow<()> {
-    if !crate::game::sunnymods_card::active(game) {
+    if !allowed || !crate::game::sunnymods_card::active(game) {
         return ::core::ops::ControlFlow::Continue(());
     }
     crate::game::sunnymods_card::draw(game, batch);

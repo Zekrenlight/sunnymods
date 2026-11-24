@@ -94,7 +94,7 @@ impl Hooks for SunnyMods {
         if !config_loaded() {
             sync(host);
         }
-        if host.consume_click(ID, "open") {
+        if host.mod_key_mapping(ID, "open").and_then(|m| m.consume_click(host)).unwrap_or(false) {
             OPEN_LIST.store(true, Ordering::Relaxed);
         }
     }
