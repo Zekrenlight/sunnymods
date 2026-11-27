@@ -86,7 +86,7 @@ struct Geo {
     panel: [i32; 4],
     body: [i32; 4],
     buttons: [[i32; 4]; 3],
-    footer: [[i32; 4]; 4],
+    footer: [[i32; 4]; 3],
 }
 
 fn geo(m: &Measure, w: i32, h: i32) -> Geo {
@@ -112,11 +112,11 @@ fn geo(m: &Measure, w: i32, h: i32) -> Geo {
     let bw = ((panel[2] - 8 - 8) / 3).max(20);
     let buttons = [0, 1, 2].map(|i| [panel[0] + 4 + i * (bw + 4), by, bw, BUTTON_H]);
     let body = [panel[0], panel[1], panel[2], (by - 4 - panel[1]).max(10)];
-    let fw = ((w - 2 * PAD - 3 * 4) / 4).clamp(40, 110);
-    let total = fw * 4 + 3 * 4;
+    let fw = ((w - 2 * PAD - 2 * 4) / 3).clamp(40, 140);
+    let total = fw * 3 + 2 * 4;
     let fx = (w - total) / 2;
     let fy = h - FOOTER + 4;
-    let footer = [0, 1, 2, 3].map(|i| [fx + i * (fw + 4), fy, fw, BUTTON_H]);
+    let footer = [0, 1, 2].map(|i| [fx + i * (fw + 4), fy, fw, BUTTON_H]);
     Geo { search, sort, chips, list, panel, body, buttons, footer }
 }
 
@@ -194,7 +194,7 @@ pub(super) fn active(game: &Game<'_>) -> bool {
 pub(super) fn frame(game: &mut Game<'_>) {
     let options = game.screen == super::Screen::Options;
     let page = game.ui.options.page();
-    let on_mods = options && matches!(page, Page::Mods | Page::NativeMod(_) | Page::ModBrowser);
+    let on_mods = options && matches!(page, Page::Mods | Page::NativeMod(_));
     with(|s| {
         if !on_mods {
             s.classic = false;
@@ -729,14 +729,13 @@ fn draw_body(out: &mut Vec<Draw>, m: &Measure, s: &State, card: &Card, g: &Geo, 
 }
 
 struct Labels {
-    footer: [Text; 4],
+    footer: [Text; 3],
     buttons: [Text; 3],
 }
 
 fn labels() -> Labels {
     Labels {
         footer: [
-            tr("sunnymods.button.browse", "Browse Mods"),
             tr("sunnymods.button.folder", "Mods Folder"),
             tr("sunnymods.button.classic", "Sunrise List"),
             tr("sunnymods.button.done", "Done"),
@@ -838,7 +837,7 @@ pub(super) fn draw(game: &mut Game<'_>, batch: &mut HudBatch) {
             let hover = inside(*r, mouse);
             d::button(&mut out, &m, &l.footer[i], r[0], r[1], r[2], r[3], true, hover, now);
         }
-        if inside(g.footer[2], mouse) {
+        if inside(g.footer[1], mouse) {
             d::tooltip(&mut out, &m, &Text::literal("Shows Sunrise's own Mods list until you leave it."), mouse);
         }
         sunrise_client::pack_screen::bind_icon_slots(&s.icons, &mut out, atlas, &mut batch.patches);
@@ -854,7 +853,6 @@ enum Act {
     Click,
     Events(Vec<Event>),
     Settings(usize),
-    Browse,
     Classic,
     Done,
 }
@@ -969,12 +967,10 @@ pub(super) fn mouse(game: &mut Game<'_>, pressed: bool, right: bool) -> Result<(
 
 fn footer_act(g: &Geo, mouse: (i32, i32)) -> Act {
     if inside(g.footer[0], mouse) {
-        Act::Browse
-    } else if inside(g.footer[1], mouse) {
         Act::Events(vec![Event::ButtonClick, Event::OpenModFolder])
-    } else if inside(g.footer[2], mouse) {
+    } else if inside(g.footer[1], mouse) {
         Act::Classic
-    } else if inside(g.footer[3], mouse) {
+    } else if inside(g.footer[2], mouse) {
         Act::Done
     } else {
         Act::None
@@ -989,10 +985,6 @@ fn perform(game: &mut Game<'_>, act: Act) -> Result<()> {
         Act::Settings(i) => {
             game.ui.options.show(Page::NativeMod(i));
             game.handle_option_events(vec![Event::ButtonClick, Event::NativeSettings(i)])
-        }
-        Act::Browse => {
-            game.ui.options.show(Page::ModBrowser);
-            game.handle_option_events(vec![Event::ButtonClick, Event::BrowseMods])
         }
         Act::Classic => {
             with(|s| s.classic = true);

@@ -17,10 +17,11 @@ mod icon_check;
 pub use config::*;
 
 use mod_api::{
-    ClientHost, ClientTickPostEvent, Hooks, KeyRegistration, Registrar, RegistrationContext,
-    SettingChangedEvent, SettingSpec,
+    ClientHost, ClientTickPostEvent, Host, Hooks, KeyRegistration, Registrar, RegistrationContext,
+    SettingChangedEvent, SettingKey, SettingSpec,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::OnceLock;
 
 /// Set by the Mods key, taken by the game half, which opens the list.
 static OPEN_LIST: AtomicBool = AtomicBool::new(false);
@@ -37,34 +38,50 @@ fn label(key: &str) -> String {
     format!("sunnymods.setting.{key}")
 }
 
-fn toggle(r: &mut dyn Registrar, key: &str, default: bool) {
+fn toggle(r: &mut dyn Registrar, key: &str, default: bool) -> Option<SettingKey> {
     let l = label(key);
-    let _ = r.register_setting(SettingSpec::toggle(key, l.clone(), default).tooltip(format!("{l}.tooltip")));
+    r.register_setting(SettingSpec::toggle(key, l.clone(), default).tooltip(format!("{l}.tooltip"))).ok()
 }
 
-fn choice(r: &mut dyn Registrar, key: &str, options: &[&str], default: usize) {
+fn choice(r: &mut dyn Registrar, key: &str, options: &[&str], default: usize) -> Option<SettingKey> {
     let l = label(key);
-    let _ = r.register_setting(
+    r.register_setting(
         SettingSpec::choice(key, l.clone(), options.iter().copied(), default).tooltip(format!("{l}.tooltip")),
-    );
+    ).ok()
 }
 
-fn color(r: &mut dyn Registrar, key: &str, default: u32) {
+fn color(r: &mut dyn Registrar, key: &str, default: u32) -> Option<SettingKey> {
     let l = label(key);
-    let _ = r.register_setting(SettingSpec::color(key, l.clone(), default).tooltip(format!("{l}.tooltip")));
+    r.register_setting(SettingSpec::color(key, l.clone(), default).tooltip(format!("{l}.tooltip"))).ok()
+}
+
+struct SettingKeys {
+    take_over: Option<SettingKey>,
+    sort: Option<SettingKey>,
+    rows: Option<SettingKey>,
+    ids: Option<SettingKey>,
+    accent: Option<SettingKey>,
+}
+
+static SETTING_KEYS: OnceLock<SettingKeys> = OnceLock::new();
+
+fn bool_of(host: &dyn Host, key: Option<SettingKey>, default: bool) -> bool {
+    key.and_then(|k| host.setting_bool(k).ok()).unwrap_or(default)
+}
+fn choice_of(host: &dyn Host, key: Option<SettingKey>, default: u32) -> u32 {
+    key.and_then(|k| host.setting_choice(k).ok()).unwrap_or(default)
 }
 
 /// Reads every setting into the copy the game half uses.
-fn sync(host: &dyn ClientHost) {
+fn sync(host: &dyn Host) {
     let d = Config::default();
-    let b = |key: &str, default: bool| host.setting_bool(key).unwrap_or(default);
-    let c = |key: &str| host.setting_choice(key).unwrap_or(0);
+    let Some(k) = SETTING_KEYS.get() else { return };
     set_config(Config {
-        take_over: b(KEY_TAKE_OVER, d.take_over),
-        sort: Sort::from_index(c(KEY_SORT)),
-        rows: Rows::from_index(c(KEY_ROWS)),
-        show_ids: b(KEY_IDS, d.show_ids),
-        accent: host.setting_color(KEY_ACCENT).unwrap_or(d.accent) & 0xFF_FFFF,
+        take_over: bool_of(host, k.take_over, d.take_over),
+        sort: Sort::from_index(choice_of(host, k.sort, 0)),
+        rows: Rows::from_index(choice_of(host, k.rows, 0)),
+        show_ids: bool_of(host, k.ids, d.show_ids),
+        accent: k.accent.and_then(|a| host.setting_color(a).ok()).unwrap_or(d.accent) & 0xFF_FFFF,
     });
 }
 
@@ -77,14 +94,17 @@ impl Hooks for SunnyMods {
                 .category("sunnymods"),
         );
         let d = Config::default();
-        toggle(r, KEY_TAKE_OVER, d.take_over);
-        choice(r, KEY_SORT, &Sort::OPTIONS, 0);
-        choice(r, KEY_ROWS, &Rows::OPTIONS, 0);
-        toggle(r, KEY_IDS, d.show_ids);
-        color(r, KEY_ACCENT, d.accent);
+        let keys = SettingKeys {
+            take_over: toggle(r, KEY_TAKE_OVER, d.take_over),
+            sort: choice(r, KEY_SORT, &Sort::OPTIONS, 0),
+            rows: choice(r, KEY_ROWS, &Rows::OPTIONS, 0),
+            ids: toggle(r, KEY_IDS, d.show_ids),
+            accent: color(r, KEY_ACCENT, d.accent),
+        };
+        let _ = SETTING_KEYS.set(keys);
     }
 
-    fn setting_changed(&self, host: &mut dyn ClientHost, event: &mut SettingChangedEvent<'_>) {
+    fn setting_changed(&self, host: &dyn Host, event: &mut SettingChangedEvent<'_>) {
         if event.mod_id == ID {
             sync(host);
         }
