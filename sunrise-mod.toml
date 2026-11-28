@@ -1,6 +1,6 @@
 id = "sunnymods"
 name = "SunnyMods"
-version = "1.0.2"
+version = "1.0.3"
 description = "A better Mods list for Sunrise. It takes over the title screen's Mods button and Options > Mods... with each mod's own icon, its version, authors, licence and links, the full description, the keys it adds and a Settings button for its settings page. Search by name, @author or #id, filter to Running, Settings or Issues, and sort by name, author or settings first. Browse Mods, the mods folder and Sunrise's own list stay one click away."
 authors = ["Zekrenlight"]
 license = "MIT"
